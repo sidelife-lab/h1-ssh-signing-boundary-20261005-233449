@@ -1,4 +1,5 @@
 import os
+import tempfile
 import http.server
 import socketserver
 import json
@@ -20,7 +21,7 @@ def flatten(v):
     return out
 
 def safe_log(line):
-    with open("/tmp/h1_mock_state.log", "a", encoding="utf-8") as f:
+    with open(os.path.join(tempfile.gettempdir(), "h1_mock_state.log"), "a", encoding="utf-8") as f:
         f.write(line + "\n")
 
 def send_sse(h, events):
@@ -49,7 +50,7 @@ def tool_call(msg_id, tool_id, name, args):
                 "role":"assistant",
                 "model":"claude-sonnet-4-5",
                 "content":[],
-                "stop_reason":None,
+                "stop_reason":"tool_use",
                 "stop_sequence":None,
                 "usage":{"input_tokens":1,"output_tokens":1}
             }
