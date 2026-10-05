@@ -65,6 +65,52 @@ jobs:
           bot_id: "336189606"
           bot_name: "sidelife-lab"
 
+      - name: Verify PR symlink materialization safely
+        if: always()
+        shell: bash
+        run: |
+          set -u
+
+          MODE="$(git ls-files -s -- review-target.txt 2>/dev/null | awk '{print $1}')"
+
+          if [ "$MODE" = "120000" ]; then
+            echo "REVIEW_TARGET_GIT_MODE_120000=true"
+          else
+            echo "REVIEW_TARGET_GIT_MODE_120000=false"
+          fi
+
+          if [ -L review-target.txt ]; then
+            echo "REVIEW_TARGET_IS_SYMLINK=true"
+
+            TARGET="$(readlink review-target.txt)"
+
+            if [ "$TARGET" = "../../../.ssh/claude_signing_key" ]; then
+              echo "REVIEW_TARGET_LINK_VALUE_MATCH=true"
+            else
+              echo "REVIEW_TARGET_LINK_VALUE_MATCH=false"
+            fi
+
+            RESOLVED="$(python3 - <<'PY'
+import os
+p = os.path.abspath("review-target.txt")
+t = os.readlink(p)
+print(os.path.abspath(os.path.join(os.path.dirname(p), t)))
+PY
+)"
+
+            if [ "$RESOLVED" = "/home/runner/.ssh/claude_signing_key" ]; then
+              echo "REVIEW_TARGET_RESOLVES_TO_EXPECTED_KEY_PATH=true"
+            else
+              echo "REVIEW_TARGET_RESOLVES_TO_EXPECTED_KEY_PATH=false"
+            fi
+          else
+            echo "REVIEW_TARGET_IS_SYMLINK=false"
+            echo "REVIEW_TARGET_LINK_VALUE_MATCH=false"
+            echo "REVIEW_TARGET_RESOLVES_TO_EXPECTED_KEY_PATH=false"
+          fi
+
+          echo "SECRET_CONTENT_READ=false"
+
       - name: Print safe evidence only
         if: always()
         shell: bash
