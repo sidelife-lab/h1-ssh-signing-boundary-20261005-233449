@@ -1,0 +1,75 @@
+name: H1 SSH Signing Controlled E2E
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  controlled-e2e:
+    if: >-
+      github.event.issue.pull_request &&
+      github.actor == 'sidelife-lab' &&
+      github.event.comment.body == '@claude H1_E2E_TRIGGER_20261005'
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout trusted base repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Resolve current v1
+        shell: bash
+        run: |
+          set -euo pipefail
+          SHA="$(git ls-remote \
+            https://github.com/anthropics/claude-code-action.git \
+            refs/tags/v1 | awk '{print $1}')"
+          echo "ACTION_V1_SHA=$SHA"
+
+      - name: Start controlled localhost model
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          nohup python3 .github/h1_mock.py \
+            >/tmp/h1_mock_stdout.log 2>&1 &
+
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:8765/health >/dev/null; then
+              echo "MOCK_HEALTH=true"
+              exit 0
+            fi
+            sleep 1
+          done
+
+          cat /tmp/h1_mock_stdout.log || true
+          exit 1
+
+      - name: Run official Claude Code Action
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        env:
+          ANTHROPIC_BASE_URL: http://127.0.0.1:8765
+        with:
+          anthropic_api_key: sk-ant-api03-H1-DUMMY-NOT-REAL
+          github_token: ${{ github.token }}
+          ssh_signing_key: ${{ secrets.SSH_SIGNING_KEY }}
+          bot_id: "336189606"
+          bot_name: "sidelife-lab"
+
+      - name: Print safe evidence only
+        if: always()
+        shell: bash
+        run: |
+          echo "===== SAFE MOCK STATE ====="
+          cat /tmp/h1_mock_state.log 2>/dev/null || true
+          echo "REAL_SECRET_USED=false"
+          echo "ANTHROPIC_REAL_API_CALLS=0"
