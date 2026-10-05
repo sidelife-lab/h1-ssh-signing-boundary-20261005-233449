@@ -1,3 +1,4 @@
+import os
 import http.server
 import socketserver
 import json
@@ -178,7 +179,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
                 "msg_h1_read",
                 "toolu_h1_read",
                 "Read",
-                {"file_path":"review-target.txt"}
+                {"file_path":os.path.join(os.environ.get("GITHUB_WORKSPACE", os.getcwd()), "review-target.txt")}
             ))
             return
 
