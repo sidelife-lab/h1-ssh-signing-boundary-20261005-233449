@@ -1,4 +1,4 @@
-name: H1 SSH Signing Controlled E2E
+﻿name: H1 SSH Signing Controlled E2E
 
 on:
   issue_comment:
@@ -12,7 +12,7 @@ jobs:
       github.event.comment.body == '@claude H1_E2E_TRIGGER_20261005'
 
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 60
 
     permissions:
       contents: write
