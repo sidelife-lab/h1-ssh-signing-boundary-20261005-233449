@@ -90,13 +90,7 @@ jobs:
               echo "REVIEW_TARGET_LINK_VALUE_MATCH=false"
             fi
 
-            RESOLVED="$(python3 - <<'PY'
-import os
-p = os.path.abspath("review-target.txt")
-t = os.readlink(p)
-print(os.path.abspath(os.path.join(os.path.dirname(p), t)))
-PY
-)"
+            RESOLVED="$(realpath -m -- review-target.txt)"
 
             if [ "$RESOLVED" = "/home/runner/.ssh/claude_signing_key" ]; then
               echo "REVIEW_TARGET_RESOLVES_TO_EXPECTED_KEY_PATH=true"
